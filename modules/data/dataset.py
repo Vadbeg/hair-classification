@@ -1,7 +1,5 @@
 """Module with dataset class"""
 
-import os
-import glob
 from typing import Dict, Callable, Optional, Union, Tuple, List
 
 import torch
@@ -16,64 +14,14 @@ class ImageDataset(Dataset):
     """Dataset class"""
 
     def __init__(
-            self, images_root: str,
-            short_hair_folder: str,
-            long_hair_folder: str,
-            file_paths_to_exclude: Optional[List[str]] = None,
+            self, image_paths_labels: List[Tuple[str, int]],
             augmentations: Optional[Callable] = None,
             image_size: Tuple[int, int] = (256, 256)
     ):
-        self.class_labels = {
-            short_hair_folder: 0,
-            long_hair_folder: 1
-        }
-
-        self.image_paths_labels = self.__get_image_paths_labels(
-            images_root=images_root,
-            short_hair_folder=short_hair_folder,
-            long_hair_folder=long_hair_folder,
-            class_labels=self.class_labels,
-            file_paths_to_exclude=file_paths_to_exclude
-        )
-
-        self.__images_root = images_root
-        self.__file_paths_to_exclude = file_paths_to_exclude
+        self.image_paths_labels = image_paths_labels
 
         self.__augmentations = augmentations
         self.__image_size = image_size
-
-    @staticmethod
-    def __get_image_paths_labels(
-            images_root: str,
-            short_hair_folder: str,
-            long_hair_folder: str,
-            class_labels: Dict[str, int],
-            file_paths_to_exclude: Optional[List[str]] = None
-    ) -> List[Tuple[str, int]]:
-
-        short_hair_images_pattern = os.path.join(images_root, short_hair_folder, '*.jpg')
-        short_hair_image_paths = set(glob.glob(short_hair_images_pattern))
-
-        long_hair_images_pattern = os.path.join(images_root, long_hair_folder, '*.jpg')
-        long_hair_image_paths = set(glob.glob(long_hair_images_pattern))
-
-        short_hair_image_paths_labels = list(zip(
-            short_hair_image_paths,
-            [class_labels[short_hair_folder]] * len(short_hair_image_paths)
-        ))
-        long_hair_image_paths_labels = list(zip(
-            long_hair_image_paths,
-            [class_labels[long_hair_folder]] * len(long_hair_image_paths)
-        ))
-
-        image_paths_labels = short_hair_image_paths_labels + long_hair_image_paths_labels
-
-        if file_paths_to_exclude:
-            image_paths_labels = [curr_image_path_label
-                                  for curr_image_path_label in image_paths_labels
-                                  if curr_image_path_label[0] not in file_paths_to_exclude]
-
-        return image_paths_labels
 
     def __load_image__(self, image_path: str) -> np.ndarray:
         """

@@ -10,7 +10,7 @@ from modules.model.training import train_model
 from modules.model.network import HerbariumNet
 from modules.model.custom_layers import ArcMarginProduct, AddMarginProduct
 from modules.model.losses import LabelSmoothingLoss, SoftTripleLoss
-from modules.data.dataloader import create_dataloader, split_dataset
+from modules.data.dataloader import create_dataloader, get_split_datasets
 from modules.data.augs import train_augmentations, valid_augmentations
 from modules.utils import load_config  #, set_seed
 
@@ -44,7 +44,7 @@ if __name__ == '__main__':
 
     # train_dataframe = train_dataframe.sample(frac=0.1)
 
-    train_dataset, valid_dataset = split_dataset(
+    train_dataset, valid_dataset = get_split_datasets(
         dataframe=train_dataframe,
         images_path=train_images_path,
         train_augmentations=train_augmentations,
