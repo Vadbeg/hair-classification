@@ -1,7 +1,10 @@
 
+import numpy as np
+import matplotlib.pyplot as plt
 
 from modules.utils import load_config, load_exclude_file_paths
 from modules.data.dataset import ImageDataset
+from modules.data.utils import tensor_to_numpy
 
 
 if __name__ == '__main__':
@@ -17,19 +20,16 @@ if __name__ == '__main__':
         images_root=train_images_path,
         short_hair_folder=train_images_short_hair_folder_name,
         long_hair_folder=train_images_long_hair_folder_name,
-        # file_paths_to_exclude=exclude_file_paths,
-    )
-
-    print(len(image_dataset.image_paths_labels))
-
-    image_dataset = ImageDataset(
-        images_root=train_images_path,
-        short_hair_folder=train_images_short_hair_folder_name,
-        long_hair_folder=train_images_long_hair_folder_name,
         file_paths_to_exclude=exclude_file_paths,
     )
 
-    print(len(image_dataset.image_paths_labels))
+    dataset_el = image_dataset[-1]
 
-    print(len(exclude_file_paths))
+    image = dataset_el['image']
+    image = tensor_to_numpy(image=image)
 
+    fig, axs = plt.subplots(figsize=(12, 8))
+
+    plt.title(dataset_el['label'])
+    plt.imshow(image)
+    plt.show()

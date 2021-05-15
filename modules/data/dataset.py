@@ -6,7 +6,6 @@ from typing import Dict, Callable, Optional, Union, Tuple, List
 
 import torch
 import numpy as np
-import pandas as pd
 import albumentations as albu
 from albumentations.pytorch.transforms import ToTensorV2
 from torch.utils.data import Dataset
@@ -64,7 +63,7 @@ class ImageDataset(Dataset):
         ))
         long_hair_image_paths_labels = list(zip(
             long_hair_image_paths,
-            [class_labels[short_hair_folder]] * len(long_hair_image_paths)
+            [class_labels[long_hair_folder]] * len(long_hair_image_paths)
         ))
 
         image_paths_labels = short_hair_image_paths_labels + long_hair_image_paths_labels
@@ -116,12 +115,12 @@ class ImageDataset(Dataset):
         :return:
         """
 
-        dataframe_row = self.dataframe.iloc[idx]
+        image_path_label = self.image_paths_labels[idx]
 
-        image_name = dataframe_row['file_name']
-        image_label = dataframe_row['category_id']
+        assert len(image_path_label) == 2, f'Bad image info: {image_path_label}'
 
-        image_path = os.path.join(self.images_path, image_name)
+        image_path = image_path_label[0]
+        image_label = image_path_label[1]
 
         image = self.__load_image__(image_path=image_path)
 
@@ -146,6 +145,6 @@ class ImageDataset(Dataset):
         :return: length of dataset
         """
 
-        length = len(self.dataframe)
+        length = len(self.image_paths_labels)
 
         return length
