@@ -53,12 +53,12 @@ def parse_arguments() -> str:
 
     parser = argparse.ArgumentParser(description=f'Draw plots on base of given report')
 
-    parser.add_argument('--report-name', default='report.json', type=str,
-                        help='Name of report file. Is joined with report folder from config')
+    parser.add_argument('--report-path', default='report.json', type=str,
+                        help='Path to report file')
 
     args = parser.parse_args()
 
-    return args.report_name
+    return args.report_path
 
 
 def build_plots(report: Dict[str, List[float]]):
@@ -103,14 +103,7 @@ def print_report(report: Dict[str, List[float]]):
 
 
 if __name__ == '__main__':
-    config_path = '/home/vadbeg/Projects/Kaggle/herbarium-2020/config.ini'
-    config = load_config(config_path=config_path)
-
-    reports_folder = config.get('Model', 'reports_dir')
-
-    report_name = parse_arguments()
-
-    report_path = os.path.join(reports_folder, report_name)
+    report_path = parse_arguments()
 
     metrics_dict = parse_report(report_path=report_path)
 

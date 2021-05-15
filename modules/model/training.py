@@ -1,11 +1,11 @@
 """Module with network training"""
 
-import os
 import sys
 from datetime import datetime
 from typing import List, Dict, Optional
 
 import torch
+import numpy as np
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 
@@ -13,9 +13,11 @@ from modules.model.metrics import get_accuracy, get_f1_score
 from modules.model.utils import print_report, save_weights, save_report
 
 
-def train_model(model: torch.nn.Module, num_epochs: int,
+def train_model(model: torch.nn.Module,
+                num_epochs: int,
                 optimizer, loss_func,
                 train_dataloader: DataLoader, valid_dataloader: DataLoader,
+                scheduler: Optional = None,
                 device: str = 'cuda:0',
                 report_dir: str = 'reports',
                 weights_dir: str = 'weights',
@@ -24,9 +26,11 @@ def train_model(model: torch.nn.Module, num_epochs: int,
     Performs whole training process
 
     :param model: model to train
+    :param num_epochs: Number of epochs to train
     :param train_dataloader: train dataloader
     :param valid_dataloader: valid dataloader
     :param optimizer: optimizer used
+    :param scheduler: reduces learning rate by some rule
     :param loss_func: loss functions used
     :param device: device to calculate on
     :param report_dir: directory to save reports
@@ -61,6 +65,7 @@ def train_model(model: torch.nn.Module, num_epochs: int,
         if valid_dataloader:
             valid_metrics = valid_one_epoch(model=model, dataloader=valid_dataloader,
                                             epoch_idx=epoch, loss_func=loss_func,
+                                            scheduler=scheduler,
                                             device=device, arc_face_module=arc_face_module)
             valid_epoch_loss_list, valid_epoch_accuracy_list, valid_epoch_f1_list = valid_metrics
 
@@ -114,7 +119,6 @@ def train_one_epoch(model: torch.nn.Module, dataloader: DataLoader,
         loss_value = loss_func(result, label)
 
         loss_value.backward()
-        optimizer.step()
 
         loss_number = round(loss_value.detach().cpu().item(), 3)
         accuracy_number = round(get_accuracy(model_prediction=result, true_prediction=label), 3)
@@ -137,6 +141,7 @@ def train_one_epoch(model: torch.nn.Module, dataloader: DataLoader,
 def valid_one_epoch(model: torch.nn.Module, dataloader: DataLoader,
                     loss_func,
                     epoch_idx: int, device: torch.device,
+                    scheduler: Optional = None,
                     arc_face_module: Optional[torch.nn.Module] = None):
     """
     Performs evaluation phase
@@ -146,6 +151,7 @@ def valid_one_epoch(model: torch.nn.Module, dataloader: DataLoader,
     :param loss_func: loss functions used
     :param epoch_idx: index of the epoch
     :param device: device to calculate on
+    :param scheduler: reduces learning rate by some rule
     :param arc_face_module: if is provided, then arcFace is used during training
     :return: tuple with metrics
     """
@@ -182,6 +188,9 @@ def valid_one_epoch(model: torch.nn.Module, dataloader: DataLoader,
             epoch_loss_numbers.append(loss_number)
             epoch_accuracy_numbers.append(accuracy_number)
             epoch_f1_numbers.append(f1_score_number)
+
+        if scheduler:
+            scheduler.step(np.average(epoch_loss_numbers))
 
     return epoch_loss_numbers, epoch_accuracy_numbers, epoch_f1_numbers
 

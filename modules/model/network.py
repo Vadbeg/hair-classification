@@ -1,47 +1,81 @@
 """Module with network code"""
 
-import timm
 import torch
 import torchsummary
 
 
-class HerbariumNet(torch.nn.Module):
+class FaceNet(torch.nn.Module):
     """Neural network class"""
 
-    def __init__(self, model_type: str, pretrained: bool = True,
-                 num_of_output_nodes: int = 1000, get_embeddings: bool = False):
+    def __init__(
+            self, model_type: str = 'simple',
+            in_channels: int = 3,
+            num_of_output_nodes: int = 2
+    ):
         """
         Init class method
 
-        :param model_type: model type (resnet18, effnet)
-        :param pretrained: if True uses pretrained weights for network
+        :param model_type: type of model to use as backbone
+        :param in_channels: number of input network channels
         :param num_of_output_nodes: number of output network nodes
-        :param get_embeddings: if True uses arc face layer instead fc layer
         """
 
         super().__init__()
 
-        # backbone = timm.create_model(model_type, pretrained=pretrained, output_stride=16)
-        backbone = timm.create_model(model_type, pretrained=pretrained, output_stride=32)
-        # backbone = timm.create_model(model_type, pretrained=pretrained)
+        if model_type == 'simple':
+            self.backbone = self.__create_simple_backbone_model(
+                in_channels=in_channels
+            )
+            backbone_out_channels = list(self.backbone.children())[-1].out_channels
+        elif model_type == 'mobilenet_v2':
+            backbone = torch.hub.load('pytorch/vision:v0.9.0', 'mobilenet_v2', pretrained=True)
 
-        if 'resnet' in model_type:
-            self.n_features = backbone.fc.in_features
-        elif 'eff' in model_type:
-            self.n_features = backbone.classifier.in_features
+            self.backbone = torch.nn.Sequential(*backbone.children())[:-1]
+
+            backbone_out_channels = self.backbone[0][-1].out_channels
         else:
-            raise NotImplementedError(f'No num_features for this network type')
+            raise NotImplementedError(f'Model {model_type} is not implemented yet.')
 
-        self.backbone = torch.nn.Sequential(*backbone.children())[:-2]
+        self.pool = torch.nn.AdaptiveAvgPool2d((5, 5))
+        self.classifier = torch.nn.Linear(
+            backbone_out_channels * 5 * 5,
+            num_of_output_nodes
+        )
 
-        # self.backbone[-1] = self.backbone[-1][0]
-        # self.backbone[-1].downsample[0].stride = 1
+    @staticmethod
+    def __create_simple_backbone_model(
+            in_channels: int = 3
+    ) -> torch.nn.Module:
+        model = torch.nn.Sequential(
+            torch.nn.Conv2d(
+                in_channels=in_channels,
+                out_channels=6,
+                kernel_size=(3, 3)
+            ),
+            torch.nn.MaxPool2d(
+                kernel_size=(2, 2),
+                stride=2
+            ),
 
-        self.classifier = torch.nn.Linear(self.n_features, num_of_output_nodes)
+            torch.nn.Conv2d(
+                in_channels=6,
+                out_channels=16,
+                kernel_size=(3, 3)
+            ),
+            torch.nn.MaxPool2d(
+                kernel_size=(2, 2),
+                stride=2
+            ),
 
-        self.pool = torch.nn.AdaptiveAvgPool2d((1, 1))
+            torch.nn.Conv2d(
+                in_channels=16,
+                out_channels=16,
+                kernel_size=(3, 3),
+                padding=(1, 1)
+            ),
+        )
 
-        self.get_embeddings = get_embeddings
+        return model
 
     def forward_features(self, x: torch.tensor) -> torch.tensor:
         """
@@ -66,15 +100,16 @@ class HerbariumNet(torch.nn.Module):
         feats = self.forward_features(x)
 
         x = self.pool(feats).view(x.size(0), -1)
-
-        if not self.get_embeddings:
-            x = self.classifier(x)
+        x = self.classifier(x)
 
         return x
 
 
 if __name__ == '__main__':
-    network = HerbariumNet(model_type='resnet18', pretrained=False, num_of_output_nodes=2721).to('cpu')
-    print(network)
+    network = FaceNet(
+        model_type='simple',
+        in_channels=3,
+        num_of_output_nodes=2
+    ).to('cpu')
 
-    # torchsummary.summary(network, input_size=(3, 320, 320), device='cpu')
+    torchsummary.summary(network, input_size=(3, 320, 320), device='cpu')
