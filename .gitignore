@@ -131,7 +131,7 @@ dmypy.json
 .idea/
 
 *.ini
-*.txt
+bad_train_files.txt
 
 reports/
 weights/
