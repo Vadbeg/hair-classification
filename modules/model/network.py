@@ -123,7 +123,7 @@ class FaceNet(torch.nn.Module):
 
 if __name__ == '__main__':
     network = FaceNet(
-        model_type='mobilenet_v2',
+        model_type='mobilenet_v2_small',
         in_channels=3,
         num_of_output_nodes=2
     ).to('cpu')

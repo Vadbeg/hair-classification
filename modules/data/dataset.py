@@ -23,7 +23,7 @@ class ImageDataset(Dataset):
         self.__augmentations = augmentations
         self.__image_size = image_size
 
-    def __load_image__(self, image_path: str) -> np.ndarray:
+    def __load_image(self, image_path: str) -> np.ndarray:
         """
         Loads image from disk
 
@@ -38,7 +38,7 @@ class ImageDataset(Dataset):
         return image
 
     @staticmethod
-    def __normalize_image__(image: np.ndarray) -> np.ndarray:
+    def __normalize_image(image: np.ndarray) -> np.ndarray:
         """
         Normalizes image
 
@@ -70,12 +70,12 @@ class ImageDataset(Dataset):
         image_path = image_path_label[0]
         image_label = image_path_label[1]
 
-        image = self.__load_image__(image_path=image_path)
+        image = self.__load_image(image_path=image_path)
 
         if self.__augmentations:
             image = self.__augmentations(image)['image']
         else:
-            image = self.__normalize_image__(image)['image']
+            image = self.__normalize_image(image)['image']
 
         image_label = torch.tensor(image_label)
 
