@@ -55,8 +55,8 @@ def normalize_image(image: np.ndarray, image_size: Tuple[int, int]) -> np.ndarra
     """
 
     transforms = albu.Compose([
-        albu.Normalize(p=1.0),
         albu.Resize(height=image_size[0], width=image_size[1], p=1.0),
+        albu.Normalize(p=1.0),
         ToTensorV2(p=1.0)
     ])
 
@@ -69,6 +69,7 @@ def get_result_for_each_face(
         image: np.ndarray,
         model: torch.nn.Module,
         faces_info: List[Dict],
+        margin: float = 0,
         input_image_size: Tuple[int, int] = (256, 256),
         device: torch.device = torch.device('cuda')
 ) -> List[Dict]:
@@ -78,11 +79,25 @@ def get_result_for_each_face(
     if (len(faces_info[1]) == 1) and (faces_info[1][0] is None):
         return result
 
-    for curr_face_coords in faces_info[0]:
+    for idx, curr_face_coords in enumerate(faces_info[0]):
+        if faces_info[1][idx] < 0.98:
+            continue
+
         y_first = int(curr_face_coords[0])
         x_first = int(curr_face_coords[1])
         y_second = int(curr_face_coords[2])
         x_second = int(curr_face_coords[3])
+
+        margin_x = int((x_second - x_first) * margin)
+        margin_y = int((y_second - y_first) * margin)
+
+        y_first = y_first - margin_y
+        x_first = x_first - margin_x
+        y_second = y_second + margin_y
+        x_second = x_second + margin_x
+
+        x_first = x_first if x_first > 0 else 0
+        y_first = y_first if y_first > 0 else 0
 
         face_image = image[x_first: x_second, y_first: y_second, :]
 
@@ -92,6 +107,7 @@ def get_result_for_each_face(
 
         hair_class = model(face_image)
         hair_class = torch.sigmoid(hair_class)
+
         hair_class = torch.argmax(hair_class)
         hair_class = hair_class.detach().cpu().numpy()
         hair_class = int(hair_class)
@@ -162,7 +178,8 @@ if __name__ == '__main__':
     result = get_result_for_each_face(
         image=image,
         model=model,
-        faces_info=faces_info
+        faces_info=faces_info,
+        margin=0.3
     )
 
     if len(result) == 0:

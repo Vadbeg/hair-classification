@@ -19,6 +19,7 @@ class ImageDataset(Dataset):
             image_size: Tuple[int, int] = (256, 256)
     ):
         self.image_paths_labels = image_paths_labels
+        np.random.shuffle(self.image_paths_labels)
 
         self.__augmentations = augmentations
         self.__image_size = image_size

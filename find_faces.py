@@ -5,6 +5,7 @@ or more than one face in train and val datasets
 
 import os
 import glob
+import argparse
 
 import torch
 from cv2 import cv2
@@ -14,10 +15,29 @@ from facenet_pytorch import MTCNN
 from modules.utils import load_config
 
 
+def parse_arguments():
+    """Parses arguments for CLI"""
+
+    parser = argparse.ArgumentParser(description=f'Finds all bad faces in dataset.'
+                                                 f'Bad means no faces or more than one face on image.')
+
+    parser.add_argument('--config-path', default='config.ini', type=str,
+                        help='Path to config file')
+
+    args = parser.parse_args()
+
+    return args
+
+
 if __name__ == '__main__':
-    config = load_config(config_path='config.ini')
+    args = parse_arguments()
+    config_path = args.config_path
+
+    config = load_config(config_path=config_path)
 
     train_images_path = config.get('Data', 'train_images_path')
+    path_to_exclude_file = config.get('Data', 'path_to_exclude_file')
+
     train_images_pattern = os.path.join(train_images_path, '**/*.jpg')
 
     all_images_names = glob.glob(pathname=train_images_pattern, recursive=True)
@@ -26,7 +46,7 @@ if __name__ == '__main__':
 
     face_detector = MTCNN(device=device)
 
-    bad_training_files = open(file='bad_train_files.txt', mode='a')
+    bad_training_files = open(file=path_to_exclude_file, mode='a')
 
     for curr_image_name in tqdm(
             all_images_names,

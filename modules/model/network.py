@@ -128,4 +128,6 @@ if __name__ == '__main__':
         num_of_output_nodes=2
     ).to('cpu')
 
+    print(network)
+
     torchsummary.summary(network, input_size=(3, 320, 320), device='cpu')

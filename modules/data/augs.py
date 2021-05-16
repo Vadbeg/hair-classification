@@ -18,13 +18,13 @@ def train_augmentations(image: np.ndarray) -> np.ndarray:
     """
 
     transforms = Compose([
-        # Flip(0.5),
-        # ShiftScaleRotate(
-        #     shift_limit=0.1,
-        #     scale_limit=0.2,
-        #     rotate_limit=30
-        # ),
-        # GaussNoise(p=0.3),
+        Flip(0.5),
+        ShiftScaleRotate(
+            shift_limit=0.1,
+            scale_limit=0.2,
+            rotate_limit=30
+        ),
+        GaussNoise(p=0.3),
         Normalize(p=1.0),
         ToTensorV2(p=1.0),
     ], p=1.0)

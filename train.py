@@ -1,6 +1,7 @@
 """Module with training of networks"""
 
 import json
+import argparse
 
 import torch
 
@@ -8,10 +9,26 @@ from modules.model.training import train_model
 from modules.model.network import FaceNet
 from modules.data.dataloader import create_dataloader, get_split_datasets
 from modules.data.augs import train_augmentations, valid_augmentations
-from modules.utils import load_config  # , set_seed
+from modules.utils import load_config, load_exclude_file_paths
+
+
+def parse_arguments():
+    """Parses arguments for CLI"""
+
+    parser = argparse.ArgumentParser(description=f'Starts training script')
+
+    parser.add_argument('--config-path', default='config.ini', type=str,
+                        help='Path to config file')
+
+    args = parser.parse_args()
+
+    return args
+
 
 if __name__ == '__main__':
-    config_path = 'config.ini'
+    args = parse_arguments()
+    config_path = args.config_path
+
     config = load_config(config_path=config_path)
 
     train_images_path = config.get('Data', 'train_images_path')
@@ -28,6 +45,11 @@ if __name__ == '__main__':
     learning_rate = config.getfloat('Model', 'learning_rate')
     learning_rate_decay_factor = config.getfloat('Model', 'learning_rate_decay_factor')
     num_of_output_nodes = config.getint('Model', 'num_of_output_nodes')
+    path_to_exclude_file = config.get('Data', 'path_to_exclude_file')
+
+    exclude_file_paths = None
+    if path_to_exclude_file:
+        exclude_file_paths = load_exclude_file_paths(exclude_file=path_to_exclude_file)
 
     train_dataset, valid_dataset = get_split_datasets(
         images_root=train_images_path,
@@ -37,6 +59,7 @@ if __name__ == '__main__':
         valid_augmentations=valid_augmentations,
         image_size=image_size,
         valid_size=valid_size,
+        file_paths_to_exclude=exclude_file_paths
     )
 
     train_dataloader = create_dataloader(dataset=train_dataset, batch_size=batch_size)
