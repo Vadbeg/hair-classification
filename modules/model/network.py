@@ -33,6 +33,15 @@ class FaceNet(torch.nn.Module):
             self.backbone = torch.nn.Sequential(*backbone.children())[:-1]
 
             backbone_out_channels = self.backbone[0][-1].out_channels
+        elif model_type == 'mobilenet_v2_small':
+            backbone = torch.hub.load('pytorch/vision:v0.9.0', 'mobilenet_v2', pretrained=True)
+
+            all_params = list(backbone.children())
+            all_params = all_params[0][:-7]
+
+            self.backbone = torch.nn.Sequential(*all_params)
+
+            backbone_out_channels = self.backbone[-1].out_channels
         else:
             raise NotImplementedError(f'Model {model_type} is not implemented yet.')
 
@@ -41,6 +50,9 @@ class FaceNet(torch.nn.Module):
             backbone_out_channels * 5 * 5,
             num_of_output_nodes
         )
+
+        self.quant = torch.quantization.QuantStub()
+        self.de_quant = torch.quantization.DeQuantStub()
 
     @staticmethod
     def __create_simple_backbone_model(
@@ -97,17 +109,21 @@ class FaceNet(torch.nn.Module):
         :return: network result
         """
 
+        x = self.quant(x)
+
         feats = self.forward_features(x)
 
-        x = self.pool(feats).view(x.size(0), -1)
+        x = self.pool(feats).view(feats.size(0), -1)
         x = self.classifier(x)
+
+        x = self.de_quant(x)
 
         return x
 
 
 if __name__ == '__main__':
     network = FaceNet(
-        model_type='simple',
+        model_type='mobilenet_v2',
         in_channels=3,
         num_of_output_nodes=2
     ).to('cpu')

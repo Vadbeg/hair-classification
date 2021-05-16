@@ -119,6 +119,7 @@ def train_one_epoch(model: torch.nn.Module, dataloader: DataLoader,
         loss_value = loss_func(result, label)
 
         loss_value.backward()
+        optimizer.step()
 
         loss_number = round(loss_value.detach().cpu().item(), 3)
         accuracy_number = round(get_accuracy(model_prediction=result, true_prediction=label), 3)
